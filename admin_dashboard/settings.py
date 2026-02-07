@@ -83,8 +83,18 @@ WSGI_APPLICATION = 'admin_dashboard.wsgi.application'
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
 # Database configuration
-# Priority: DATABASE_URL > individual PostgreSQL vars > SQLite fallback
-DATABASE_URL = os.getenv('DATABASE_URL')
+# Priority: DATABASE_URL > POSTGRES_URL > individual PostgreSQL vars > SQLite fallback
+# Railway may use different variable names depending on how the database is linked
+DATABASE_URL = (
+    os.getenv('DATABASE_URL') or
+    os.getenv('DATABASE_PUBLIC_URL') or
+    os.getenv('POSTGRES_URL') or
+    os.getenv('POSTGRESQL_URL')
+)
+
+# Debug: Print which database is being used (remove in production)
+import sys
+print(f"DATABASE_URL detected: {'Yes' if DATABASE_URL else 'No - using SQLite fallback'}", file=sys.stderr)
 
 if DATABASE_URL:
     # Railway/Heroku style DATABASE_URL (production)
