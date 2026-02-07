@@ -3,12 +3,15 @@ Django settings for admin_dashboard project.
 """
 
 from pathlib import Path
-from dotenv import load_dotenv
 import os
 import dj_database_url
 
-# Load environment variables from .env file
-load_dotenv()
+# Only load .env file in development (when it exists)
+# In production (Railway), env vars are already set by the platform
+env_path = Path(__file__).resolve().parent.parent / '.env'
+if env_path.exists():
+    from dotenv import load_dotenv
+    load_dotenv(override=False)  # Don't override existing env vars
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -82,54 +85,30 @@ WSGI_APPLICATION = 'admin_dashboard.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
-# Database configuration
-# Priority: DATABASE_URL > POSTGRES_URL > individual PostgreSQL vars > SQLite fallback
+# Database configuration - VERSION 2
 import sys
+print("=== SETTINGS VERSION 2 ===", file=sys.stderr)
 
-# Debug all DB-related env vars
-print("=== Python Settings Debug ===", file=sys.stderr)
-print(f"DATABASE_URL from env: {os.getenv('DATABASE_URL', 'NOT SET')[:60]}..." if os.getenv('DATABASE_URL') else "DATABASE_URL: NOT SET", file=sys.stderr)
-print(f"DATABASE_PUBLIC_URL from env: {os.getenv('DATABASE_PUBLIC_URL', 'NOT SET')[:60]}..." if os.getenv('DATABASE_PUBLIC_URL') else "DATABASE_PUBLIC_URL: NOT SET", file=sys.stderr)
-
-DATABASE_URL = (
-    os.getenv('DATABASE_URL') or
-    os.getenv('DATABASE_PUBLIC_URL') or
-    os.getenv('POSTGRES_URL') or
-    os.getenv('POSTGRESQL_URL')
-)
-
-print(f"Final DATABASE_URL: {'SET - using PostgreSQL' if DATABASE_URL else 'NOT SET - using SQLite'}", file=sys.stderr)
+# Get DATABASE_URL from environment (Railway sets this automatically when you link a database)
+DATABASE_URL = os.environ.get('DATABASE_URL')
+print(f"DATABASE_URL from os.environ: {DATABASE_URL[:70] if DATABASE_URL else 'NOT SET'}...", file=sys.stderr)
 
 if DATABASE_URL:
-    # Railway/Heroku style DATABASE_URL (production)
-    # Use parse() instead of config() for explicit control
-    DATABASES = {
-        'default': dj_database_url.parse(DATABASE_URL, conn_max_age=600)
-    }
-    print(f"DATABASES config: {DATABASES['default'].get('HOST', 'NO HOST')}", file=sys.stderr)
-elif os.getenv('DATABASE_HOST'):
-    # PostgreSQL with individual environment variables (Supabase)
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.postgresql',
-            'NAME': os.getenv('DATABASE_NAME', 'postgres'),
-            'USER': os.getenv('DATABASE_USER', 'postgres'),
-            'PASSWORD': os.getenv('DATABASE_PASSWORD', ''),
-            'HOST': os.getenv('DATABASE_HOST'),
-            'PORT': os.getenv('DATABASE_PORT', '5432'),
-            'OPTIONS': {
-                'sslmode': os.getenv('DATABASE_SSLMODE', 'require'),
-            },
-        }
-    }
+    # Parse the DATABASE_URL using dj-database-url
+    db_config = dj_database_url.parse(DATABASE_URL, conn_max_age=600)
+    print(f"Parsed DB HOST: {db_config.get('HOST', 'NO HOST')}", file=sys.stderr)
+    print(f"Parsed DB NAME: {db_config.get('NAME', 'NO NAME')}", file=sys.stderr)
+    DATABASES = {'default': db_config}
 else:
-    # SQLite fallback for local development
+    print("No DATABASE_URL - using SQLite fallback", file=sys.stderr)
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
             'NAME': BASE_DIR / 'db.sqlite3',
         }
     }
+
+print(f"Final DB ENGINE: {DATABASES['default'].get('ENGINE', 'unknown')}", file=sys.stderr)
 
 
 # Password validation
