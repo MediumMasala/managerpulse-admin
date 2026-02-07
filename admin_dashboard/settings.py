@@ -83,36 +83,35 @@ WSGI_APPLICATION = 'admin_dashboard.wsgi.application'
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
 # Database configuration
-# Supports: DATABASE_URL (Railway/Heroku style), individual vars, or SQLite fallback
+# Priority: DATABASE_URL > individual PostgreSQL vars > SQLite fallback
 DATABASE_URL = os.getenv('DATABASE_URL')
-USE_SQLITE = os.getenv('USE_SQLITE', 'false').lower() == 'true'
 
 if DATABASE_URL:
-    # Railway/Heroku style DATABASE_URL
+    # Railway/Heroku style DATABASE_URL (production)
     DATABASES = {
         'default': dj_database_url.config(default=DATABASE_URL, conn_max_age=600)
     }
-elif USE_SQLITE:
-    # SQLite for local development (demo mode)
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': BASE_DIR / 'db.sqlite3',
-        }
-    }
-else:
-    # PostgreSQL configuration for Supabase (production)
+elif os.getenv('DATABASE_HOST'):
+    # PostgreSQL with individual environment variables (Supabase)
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.postgresql',
             'NAME': os.getenv('DATABASE_NAME', 'postgres'),
             'USER': os.getenv('DATABASE_USER', 'postgres'),
             'PASSWORD': os.getenv('DATABASE_PASSWORD', ''),
-            'HOST': os.getenv('DATABASE_HOST', 'localhost'),
+            'HOST': os.getenv('DATABASE_HOST'),
             'PORT': os.getenv('DATABASE_PORT', '5432'),
             'OPTIONS': {
                 'sslmode': os.getenv('DATABASE_SSLMODE', 'require'),
             },
+        }
+    }
+else:
+    # SQLite fallback for local development
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
         }
     }
 
