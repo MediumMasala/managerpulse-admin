@@ -1,0 +1,9 @@
+# Force rebuild with explicit Python setup
+[phases.setup]
+nixPkgs = ["python311", "postgresql"]
+
+[phases.install]
+cmds = ["pip install -r requirements.txt"]
+
+[start]
+cmd = "bash start.sh"
