@@ -84,7 +84,13 @@ WSGI_APPLICATION = 'admin_dashboard.wsgi.application'
 
 # Database configuration
 # Priority: DATABASE_URL > POSTGRES_URL > individual PostgreSQL vars > SQLite fallback
-# Railway may use different variable names depending on how the database is linked
+import sys
+
+# Debug all DB-related env vars
+print("=== Python Settings Debug ===", file=sys.stderr)
+print(f"DATABASE_URL from env: {os.getenv('DATABASE_URL', 'NOT SET')[:60]}..." if os.getenv('DATABASE_URL') else "DATABASE_URL: NOT SET", file=sys.stderr)
+print(f"DATABASE_PUBLIC_URL from env: {os.getenv('DATABASE_PUBLIC_URL', 'NOT SET')[:60]}..." if os.getenv('DATABASE_PUBLIC_URL') else "DATABASE_PUBLIC_URL: NOT SET", file=sys.stderr)
+
 DATABASE_URL = (
     os.getenv('DATABASE_URL') or
     os.getenv('DATABASE_PUBLIC_URL') or
@@ -92,15 +98,15 @@ DATABASE_URL = (
     os.getenv('POSTGRESQL_URL')
 )
 
-# Debug: Print which database is being used (remove in production)
-import sys
-print(f"DATABASE_URL detected: {'Yes' if DATABASE_URL else 'No - using SQLite fallback'}", file=sys.stderr)
+print(f"Final DATABASE_URL: {'SET - using PostgreSQL' if DATABASE_URL else 'NOT SET - using SQLite'}", file=sys.stderr)
 
 if DATABASE_URL:
     # Railway/Heroku style DATABASE_URL (production)
+    # Use parse() instead of config() for explicit control
     DATABASES = {
-        'default': dj_database_url.config(default=DATABASE_URL, conn_max_age=600)
+        'default': dj_database_url.parse(DATABASE_URL, conn_max_age=600)
     }
+    print(f"DATABASES config: {DATABASES['default'].get('HOST', 'NO HOST')}", file=sys.stderr)
 elif os.getenv('DATABASE_HOST'):
     # PostgreSQL with individual environment variables (Supabase)
     DATABASES = {
