@@ -24,8 +24,8 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-change-this-in-production')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-# Temporarily enabled for debugging - set to 'false' via env var in production
-DEBUG = os.getenv('DEBUG', 'True').lower() != 'false'
+# Force DEBUG=True for now to see errors
+DEBUG = True
 
 ALLOWED_HOSTS = [
     'localhost',
@@ -169,3 +169,25 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Import-Export settings
 IMPORT_EXPORT_USE_TRANSACTIONS = True
+
+# Logging configuration - show all errors
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'root': {
+        'handlers': ['console'],
+        'level': 'DEBUG',
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
+    },
+}
